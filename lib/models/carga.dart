@@ -3,12 +3,14 @@ class Carga {
   final DateTime fecha;
   final String kmS;
   final String monto;
+  final int precio;
 
   Carga({
     this.id,
     required this.fecha,
     required this.kmS,
     required this.monto,
+    required this.precio,
   });
 
   // Para guardar en DB
@@ -18,6 +20,7 @@ class Carga {
       'fecha': fecha.toIso8601String(),
       'kmS': kmS,
       'monto': monto,
+      'precio': precio,
     };
   }
 
@@ -28,6 +31,7 @@ class Carga {
       fecha: DateTime.parse(map['fecha']),
       kmS: map['kmS'],
       monto: map['monto'],
+      precio: map['precio'],
     );
   }
 }
