@@ -9,6 +9,16 @@ class MyAppState extends ChangeNotifier {
   MyAppState() {
     _loadCargas();
   }
+  Future<int?> obtenerUltimoPrecio() async {
+    final dbHelper = DBHelper();
+    final cargas = await dbHelper.getCargas();
+    if (cargas.isNotEmpty) {
+      // Ordena por fecha descendente y toma el precio más reciente
+      cargas.sort((a, b) => b.fecha.compareTo(a.fecha));
+      return cargas.first.precio;
+    }
+    return null;
+  }
 
  Future<void> agregarCarga(Carga carga) async {
   try {

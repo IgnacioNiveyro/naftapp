@@ -17,7 +17,7 @@ class CargasRealizadasPage extends StatelessWidget {
         final carga = cargas[index];
         return ListTile(
           leading: const Icon(Icons.local_gas_station),
-          title: Text('KM/S: ${carga.kmS} - Monto: \$${carga.monto} - Precio: \$${carga.precio} - Litros: ${(double.parse(carga.monto) / carga.precio).toStringAsFixed(2)}'),
+          title: Text('KM: ${carga.kmS} - Monto: \$${carga.monto} - Precio: \$${carga.precio} - Litros: ${(double.parse(carga.monto) / carga.precio).toStringAsFixed(2)}'),
           subtitle:
               Text('Fecha: ${carga.fecha.toLocal().toString().split(' ')[0]}'),
           trailing: IconButton(
