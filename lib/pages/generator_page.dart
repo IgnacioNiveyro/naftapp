@@ -13,6 +13,7 @@ class _GeneratorPageState extends State<GeneratorPage> {
   DateTime? selectedDate;
   String kmSValue = '';
   String montoValue = '';
+  int precioValue = 0;
   final TextEditingController _kmSController = TextEditingController();
   final TextEditingController _montoController = TextEditingController();
   final TextEditingController _fechaController = TextEditingController();
@@ -20,23 +21,9 @@ class _GeneratorPageState extends State<GeneratorPage> {
   final FocusNode _montoFocusNode = FocusNode();
   final TextEditingController _precioSuperShellController = TextEditingController();
 
-  int? precioSuperActual;
-
   @override
   void initState() {
     super.initState();
-    // Llamamos a fetchPrecioSuperShell para obtener el valor del precio
-    _loadPrecio();
-  }
-
-  void _loadPrecio() async {
-    final precio = await context.read<MyAppState>().fetchPrecioSuperShell();
-    if (precio != null) {
-      setState(() {
-        precioSuperActual = precio;
-        _precioSuperShellController.text = precio.toString();
-      });
-    }
   }
 
   @override
@@ -46,7 +33,6 @@ class _GeneratorPageState extends State<GeneratorPage> {
     _fechaController.dispose();
     _kmSFocusNode.dispose();
     _montoFocusNode.dispose();
-    _precioSuperShellController.dispose();
     super.dispose();
   }
 
@@ -56,6 +42,7 @@ class _GeneratorPageState extends State<GeneratorPage> {
       selectedDate = null;
       kmSValue = '';
       montoValue = '';
+      precioValue = 0;
       _kmSController.clear();
       _montoController.clear();
       _fechaController.clear();
@@ -111,17 +98,13 @@ class _GeneratorPageState extends State<GeneratorPage> {
             controller: _precioSuperShellController,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
-              labelText: 'Precio SUPER - SHELL',
+              labelText: 'Precio NAFTA',
               border: OutlineInputBorder(),
             ),
-            onChanged: (value) async {
-              final nuevoPrecio = int.tryParse(value);
-              if (nuevoPrecio != null) {
-                await context.read<MyAppState>().setPrecioSuperShell(nuevoPrecio);
-                setState(() {
-                  precioSuperActual = nuevoPrecio;
-                });
-              }
+            onChanged: (value) {
+              setState(() {
+                precioValue = int.tryParse(value) ?? 0;
+              });
             },
           ),
           const SizedBox(height: 20),
@@ -177,6 +160,12 @@ class _GeneratorPageState extends State<GeneratorPage> {
           // Botón Agregar
           ElevatedButton(
             onPressed: () async {
+              if (kmSValue.isEmpty || montoValue.isEmpty || precioValue <= 0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Complete todos los campos correctamente')),
+    );
+    return;
+  }
               DateTime fecha = fechaActualChecked
                   ? DateTime.now()
                   : selectedDate ?? DateTime.now();
@@ -185,16 +174,19 @@ class _GeneratorPageState extends State<GeneratorPage> {
                 fecha: fecha,
                 kmS: kmSValue,
                 monto: montoValue,
-                precio: precioSuperActual ?? 0,
+                precio: precioValue,
               );
-
-              await context.read<MyAppState>().agregarCarga(nuevaCarga);
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Datos agregados correctamente')),
-              );
-
-              _clearFields();
+               try {
+    await context.read<MyAppState>().agregarCarga(nuevaCarga);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Datos agregados correctamente')),
+    );
+    _clearFields();
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error al guardar: ${e.toString()}')),
+    );
+  }
             },
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 50),
