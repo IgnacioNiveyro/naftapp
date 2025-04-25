@@ -117,9 +117,10 @@ class _GeneratorPageState extends State<GeneratorPage> {
                 controller: _precioController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  labelText: 'Precio NAFTA *',
+                  labelText: 'Precio NAFTA por litro*',
                   hintText: 'Ingrese precio por litro',
                   border: OutlineInputBorder(),
+                  prefixText: '\$ ',
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -155,13 +156,15 @@ class _GeneratorPageState extends State<GeneratorPage> {
                 controller: _kmSController,
                 decoration: const InputDecoration(
                   labelText: 'Kilómetros vehículo *',
-                  hintText: 'Ingrese los km de su vehículo',	
+                  hintText: 'Ingrese los km de su vehículo',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Este campo es obligatorio';
+                  } else if (int.tryParse(value) == null) {
+                    return 'Los kilómetros del vehículo deben ser un número';
                   }
                   return null;
                 },
@@ -173,6 +176,7 @@ class _GeneratorPageState extends State<GeneratorPage> {
                 decoration: const InputDecoration(
                   labelText: 'Monto *',
                   hintText: 'Ingrese monto a cargar',
+                  prefixText: '\$ ',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
@@ -180,7 +184,8 @@ class _GeneratorPageState extends State<GeneratorPage> {
                   if (value == null || value.isEmpty) {
                     return 'Este campo es obligatorio';
                   }
-                  if (double.tryParse(value) == null || double.parse(value) <= 0) {
+                  if (double.tryParse(value) == null ||
+                      double.parse(value) <= 0) {
                     return 'Ingrese un monto válido';
                   }
                   return null;
@@ -198,7 +203,8 @@ class _GeneratorPageState extends State<GeneratorPage> {
                         ? DateTime.now()
                         : selectedDate ?? DateTime.now();
 
-                    double litros = double.parse(montoValue) / int.parse(precioValue);
+                    double litros =
+                        double.parse(montoValue) / int.parse(precioValue);
 
                     bool confirmado = await showDialog(
                       context: context,
@@ -208,7 +214,8 @@ class _GeneratorPageState extends State<GeneratorPage> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Fecha: ${fecha.toLocal().toString().split(' ')[0]}'),
+                            Text(
+                                'Fecha: ${fecha.toLocal().toString().split(' ')[0]}'),
                             Text('KM: $kmSValue'),
                             Text('Monto: \$$montoValue'),
                             Text('Precio por litro: \$$precioValue'),
@@ -241,17 +248,22 @@ class _GeneratorPageState extends State<GeneratorPage> {
                       );
 
                       try {
-                        await context.read<MyAppState>().agregarCarga(nuevaCarga);
+                        await context
+                            .read<MyAppState>()
+                            .agregarCarga(nuevaCarga);
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Datos agregados correctamente')),
+                            const SnackBar(
+                                content: Text('Datos agregados correctamente')),
                           );
                           await _clearFields();
                         }
                       } catch (e) {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Error al guardar: ${e.toString()}')),
+                            SnackBar(
+                                content:
+                                    Text('Error al guardar: ${e.toString()}')),
                           );
                         }
                       }
