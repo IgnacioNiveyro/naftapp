@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:naftapp/providers/my_app_state.dart';  // Asegúrate de importar MyAppState si es necesario
+import 'package:intl/intl.dart';
+import 'package:naftapp/providers/my_app_state.dart';
 
 class CargasRealizadasPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var cargas = context.watch<MyAppState>().cargas;
+    final dateFormat = DateFormat('dd/MM/yyyy'); // 👈 Formateador
 
     if (cargas.isEmpty) {
       return Center(child: Text('No hay cargas realizadas.'));
@@ -22,26 +24,34 @@ class CargasRealizadasPage extends StatelessWidget {
           leading: const Icon(Icons.local_gas_station),
           title: Text(
               'KM: ${carga.kmS} - Monto: \$${carga.monto} - Precio: \$${carga.precio} - Litros: ${litros.toStringAsFixed(2)}'),
-          subtitle: Text('Fecha: ${carga.fecha.toLocal().toString().split(' ')[0]}'),
+          subtitle: Text('Fecha: ${dateFormat.format(carga.fecha)}'), // 👈 Fecha formateada
           trailing: _buildDeleteButton(context, carga),
         ),
       );
 
-      // Si hay una carga posterior (no es la última), mostrar el mensaje
+      // Si hay una carga POSTERIOR (no es la última), calcular rendimiento
       if (i + 1 < cargas.length) {
-        final cargaSiguiente = cargas[i + 1];
-        final litrosActuales = double.parse(carga.monto) / carga.precio;
+        final cargaPosterior = cargas[i + 1];
+        final litrosPosteriores = double.parse(cargaPosterior.monto) / cargaPosterior.precio;
         final kmsActual = int.tryParse(carga.kmS) ?? 0;
-        final kmsSiguiente = int.tryParse(cargaSiguiente.kmS) ?? 0;
-        final dias = cargaSiguiente.fecha.difference(carga.fecha).inDays;
+        final kmsPosterior = int.tryParse(cargaPosterior.kmS) ?? 0;
+        final fechaActual = DateUtils.dateOnly(carga.fecha);
+        final fechaPosterior = DateUtils.dateOnly(cargaPosterior.fecha);
+        final dias = fechaActual.difference(fechaPosterior).inDays;
+        final kmsRecorridos = kmsActual - kmsPosterior;
 
-        // Agregar el mensaje entre las cargas
+        // 👇 Diferenciar primer mensaje
+        final mensaje = i == 0
+          ? 'Tu última carga de ${litrosPosteriores.toStringAsFixed(2)} litros del día ${dateFormat.format(cargaPosterior.fecha)} '
+            'te rindió $dias días y $kmsRecorridos km.'
+          : '→ Los ${litrosPosteriores.toStringAsFixed(2)} litros cargados el ${dateFormat.format(cargaPosterior.fecha)} '
+            'te rindieron $dias días y $kmsRecorridos km.';
+
         items.add(
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
-              '→ Los ${litrosActuales.toStringAsFixed(2)} litros cargados el ${carga.fecha.toLocal().toString().split(' ')[0]} '
-              'te rindieron $dias días y ${kmsSiguiente - kmsActual} km.',
+              mensaje,
               style: TextStyle(fontStyle: FontStyle.italic, color: Colors.green[700]),
             ),
           ),

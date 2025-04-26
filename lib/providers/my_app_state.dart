@@ -13,14 +13,12 @@ class MyAppState extends ChangeNotifier {
     final dbHelper = DBHelper();
     final cargas = await dbHelper.getCargas();
     if (cargas.isNotEmpty) {
-      // Ordena por fecha descendente y toma el precio más reciente
-      cargas.sort((a, b) => b.fecha.compareTo(a.fecha));
-      return cargas.first.precio;
+      return cargas.last.precio;
     }
     return null;
   }
 
- Future<void> agregarCarga(Carga carga) async {
+Future<void> agregarCarga(Carga carga) async {
   try {
     final dbHelper = DBHelper();
     final id = await dbHelper.insertCarga(carga);
@@ -34,6 +32,7 @@ class MyAppState extends ChangeNotifier {
     );
 
     _cargas.add(cargaConId);
+    _cargas.sort((a, b) => b.fecha.compareTo(a.fecha)); // ¡Ordena después de agregar!
     notifyListeners();
   } catch (e) {
     print('Error adding carga: $e');
@@ -43,14 +42,16 @@ class MyAppState extends ChangeNotifier {
 
   Future<void> _loadCargas() async {
     final cargasDesdeDB = await DBHelper().getCargas();
+    cargasDesdeDB.sort((a, b) => b.fecha.compareTo(a.fecha));
     _cargas.addAll(cargasDesdeDB);
     notifyListeners();
   }
 
-  Future<void> eliminarCarga(Carga carga) async {
-    final dbHelper = DBHelper();
-    await dbHelper.deleteCarga(carga.id!);
-    _cargas.removeWhere((c) => c.id == carga.id);
-    notifyListeners();
-  }
+Future<void> eliminarCarga(Carga carga) async {
+  final dbHelper = DBHelper();
+  await dbHelper.deleteCarga(carga.id!);
+  _cargas.removeWhere((c) => c.id == carga.id);
+  // No es estrictamente necesario reordenar aquí, pero puedes hacerlo si hay inconsistencias
+  notifyListeners();
+}
 }

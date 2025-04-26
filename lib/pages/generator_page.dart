@@ -248,6 +248,56 @@ class _GeneratorPageState extends State<GeneratorPage> {
                       );
 
                       try {
+                        // 🔥 VALIDACIONES DE KM SEGÚN FECHA
+                        final cargas =
+                            List<Carga>.from(context.read<MyAppState>().cargas);
+                        cargas.add(nuevaCarga);
+                        cargas.sort((a, b) => b.fecha.compareTo(
+                            a.fecha)); // Ordenamos por fecha descendente
+
+                        final index = cargas.indexOf(nuevaCarga);
+
+                        bool kmValido = true;
+                        final nuevoKm = int.tryParse(nuevaCarga.kmS) ?? -1;
+
+                        if (index == 0) {
+                          // Es la más nueva → debe tener km >= carga siguiente
+                          final siguienteKm =
+                              int.tryParse(cargas[index + 1].kmS) ?? -1;
+                          if (nuevoKm < siguienteKm) {
+                            kmValido = false;
+                          }
+                        } else if (index == cargas.length - 1) {
+                          // Es la más antigua → debe tener km <= carga anterior
+                          final anteriorKm =
+                              int.tryParse(cargas[index - 1].kmS) ?? -1;
+                          if (nuevoKm > anteriorKm) {
+                            kmValido = false;
+                          }
+                        } else {
+                          // Está en el medio → debe estar entre anterior y siguiente
+                          final anteriorKm =
+                              int.tryParse(cargas[index - 1].kmS) ?? -1;
+                          final siguienteKm =
+                              int.tryParse(cargas[index + 1].kmS) ?? -1;
+
+                          if (!(siguienteKm <= nuevoKm &&
+                              nuevoKm <= anteriorKm)) {
+                            kmValido = false;
+                          }
+                        }
+
+                        if (!kmValido) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  'Error: Los kilómetros no son consistentes con las otras cargas.'),
+                            ),
+                          );
+                          return; // No continúa
+                        }
+
+                        // Si todo OK, agregamos
                         await context
                             .read<MyAppState>()
                             .agregarCarga(nuevaCarga);
