@@ -75,6 +75,23 @@ class _GeneratorPageState extends State<GeneratorPage> {
       initialDate: selectedDate ?? now,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.black, // Color del header
+              onPrimary: Colors.white, // Color del texto del header
+              onSurface: Colors.black, // Color del texto de los días
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.black, // Color de los botones
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null && picked != selectedDate && mounted) {
       setState(() {
@@ -98,6 +115,7 @@ class _GeneratorPageState extends State<GeneratorPage> {
             children: [
               Row(
                 children: [
+                  const Text('Usar fecha actual'),
                   Checkbox(
                     value: fechaActualChecked,
                     onChanged: (bool? value) {
@@ -110,9 +128,9 @@ class _GeneratorPageState extends State<GeneratorPage> {
                       });
                     },
                   ),
-                  const Text('Usar fecha actual'),
                 ],
               ),
+              const SizedBox(height: 25),
               TextFormField(
                 controller: _precioController,
                 keyboardType: TextInputType.number,
@@ -133,7 +151,7 @@ class _GeneratorPageState extends State<GeneratorPage> {
                 },
                 onChanged: (value) => precioValue = value,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 25),
               if (!fechaActualChecked) ...[
                 TextFormField(
                   controller: _fechaController,
@@ -170,7 +188,7 @@ class _GeneratorPageState extends State<GeneratorPage> {
                 },
                 onChanged: (value) => kmSValue = value,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 25),
               TextFormField(
                 controller: _montoController,
                 decoration: const InputDecoration(
@@ -192,7 +210,7 @@ class _GeneratorPageState extends State<GeneratorPage> {
                 },
                 onChanged: (value) => montoValue = value,
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 25),
               ElevatedButton(
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
@@ -209,29 +227,64 @@ class _GeneratorPageState extends State<GeneratorPage> {
                     bool confirmado = await showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
-                        title: const Text('Confirmar datos'),
+                        backgroundColor: Colors.white, // Fondo blanco
+                        title: const Text(
+                          'Confirmar datos',
+                          style: TextStyle(color: Colors.black), // Texto negro
+                        ),
                         content: Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                                'Fecha: ${fecha.toLocal().toString().split(' ')[0]}'),
-                            Text('KM: $kmSValue'),
-                            Text('Monto: \$$montoValue'),
-                            Text('Precio por litro: \$$precioValue'),
-                            Text('Litros: ${litros.toStringAsFixed(2)}'),
-                            const SizedBox(height: 20),
-                            const Text('¿Confirmar estos datos?'),
+                              'Fecha: ${fecha.toLocal().toString().split(' ')[0]}',
+                              style:
+                                  TextStyle(color: Colors.black), // Texto negro
+                            ),
+                            Text(
+                              'KM: $kmSValue',
+                              style:
+                                  TextStyle(color: Colors.black), // Texto negro
+                            ),
+                            Text(
+                              'Monto: \$$montoValue',
+                              style:
+                                  TextStyle(color: Colors.black), // Texto negro
+                            ),
+                            Text(
+                              'Precio por litro: \$$precioValue',
+                              style:
+                                  TextStyle(color: Colors.black), // Texto negro
+                            ),
+                            Text(
+                              'Litros: ${litros.toStringAsFixed(2)}',
+                              style:
+                                  TextStyle(color: Colors.black), // Texto negro
+                            ),
+                            const SizedBox(height: 25),
+                            const Text(
+                              '¿Confirmar estos datos?',
+                              style:
+                                  TextStyle(color: Colors.black), // Texto negro
+                            ),
                           ],
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(false),
-                            child: const Text('Cancelar'),
+                            child: const Text(
+                              'Cancelar',
+                              style:
+                                  TextStyle(color: Colors.black), // Texto negro
+                            ),
                           ),
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(true),
-                            child: const Text('Confirmar'),
+                            child: const Text(
+                              'Confirmar',
+                              style:
+                                  TextStyle(color: Colors.black), // Texto negro
+                            ),
                           ),
                         ],
                       ),
@@ -260,21 +313,22 @@ class _GeneratorPageState extends State<GeneratorPage> {
                         bool kmValido = true;
                         final nuevoKm = int.tryParse(nuevaCarga.kmS) ?? -1;
 
-                        if (index == 0) {
+                        if (index == 0 && cargas.length > 1) {
                           // Es la más nueva → debe tener km >= carga siguiente
                           final siguienteKm =
                               int.tryParse(cargas[index + 1].kmS) ?? -1;
                           if (nuevoKm < siguienteKm) {
                             kmValido = false;
                           }
-                        } else if (index == cargas.length - 1) {
+                        } else if (index == cargas.length - 1 &&
+                            cargas.length > 1) {
                           // Es la más antigua → debe tener km <= carga anterior
                           final anteriorKm =
                               int.tryParse(cargas[index - 1].kmS) ?? -1;
                           if (nuevoKm > anteriorKm) {
                             kmValido = false;
                           }
-                        } else {
+                        } else if (index > 0 && index < cargas.length - 1) {
                           // Está en el medio → debe estar entre anterior y siguiente
                           final anteriorKm =
                               int.tryParse(cargas[index - 1].kmS) ?? -1;

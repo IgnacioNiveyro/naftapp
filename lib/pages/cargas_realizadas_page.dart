@@ -7,7 +7,7 @@ class CargasRealizadasPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var cargas = context.watch<MyAppState>().cargas;
-    final dateFormat = DateFormat('dd/MM/yyyy'); // 👈 Formateador
+    final dateFormat = DateFormat('dd/MM/yyyy');
 
     if (cargas.isEmpty) {
       return Center(child: Text('No hay cargas realizadas.'));
@@ -18,45 +18,49 @@ class CargasRealizadasPage extends StatelessWidget {
       final carga = cargas[i];
       final litros = double.parse(carga.monto) / carga.precio;
 
-      // Agregar carga actual
       items.add(
-        ListTile(
-          leading: const Icon(Icons.local_gas_station),
-          title: Text(
-              'KM: ${carga.kmS} - Monto: \$${carga.monto} - Precio: \$${carga.precio} - Litros: ${litros.toStringAsFixed(2)}'),
-          subtitle: Text('Fecha: ${dateFormat.format(carga.fecha)}'), // 👈 Fecha formateada
-          trailing: _buildDeleteButton(context, carga),
-        ),
-      );
-
-      // Si hay una carga POSTERIOR (no es la última), calcular rendimiento
-      if (i + 1 < cargas.length) {
-        final cargaPosterior = cargas[i + 1];
-        final litrosPosteriores = double.parse(cargaPosterior.monto) / cargaPosterior.precio;
-        final kmsActual = int.tryParse(carga.kmS) ?? 0;
-        final kmsPosterior = int.tryParse(cargaPosterior.kmS) ?? 0;
-        final fechaActual = DateUtils.dateOnly(carga.fecha);
-        final fechaPosterior = DateUtils.dateOnly(cargaPosterior.fecha);
-        final dias = fechaActual.difference(fechaPosterior).inDays;
-        final kmsRecorridos = kmsActual - kmsPosterior;
-
-        // 👇 Diferenciar primer mensaje
-        final mensaje = i == 0
-          ? 'Tu última carga de ${litrosPosteriores.toStringAsFixed(2)} litros del día ${dateFormat.format(cargaPosterior.fecha)} '
-            'te rindió $dias días y $kmsRecorridos km.'
-          : '→ Los ${litrosPosteriores.toStringAsFixed(2)} litros cargados el ${dateFormat.format(cargaPosterior.fecha)} '
-            'te rindieron $dias días y $kmsRecorridos km.';
-
-        items.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              mensaje,
-              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.green[700]),
+        Card(
+          color: Colors.grey[300],
+          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Carga ${dateFormat.format(carga.fecha)}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.black,
+                      ),
+                    ),
+                    _buildDeleteButton(context, carga),
+                  ],
+                ),
+                
+                SizedBox(height: 8),
+                Text(
+                  'KM: ${carga.kmS} - Monto: \$${carga.monto}',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  'Precio: \$${carga.precio}/L - Litros: ${litros.toStringAsFixed(2)}L',
+                ),
+                
+                // Mostrar rendimiento SOLO si no es la carga más reciente (i > 0)
+                if (i > 0) ...[
+                  SizedBox(height: 12),
+                  _buildRendimientoText(cargas[i-1].kmS, carga.kmS, i),
+                ],
+              ],
             ),
           ),
-        );
-      }
+        ),
+      );
     }
 
     return ListView(
@@ -64,35 +68,72 @@ class CargasRealizadasPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDeleteButton(BuildContext context, carga) {
-    return IconButton(
-      icon: const Icon(Icons.delete, color: Colors.red),
-      onPressed: () async {
-        final confirmacion = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Confirmar eliminación'),
-            content: const Text('¿Desea eliminar la carga?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('No'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Sí'),
-              ),
-            ],
-          ),
-        );
+Widget _buildRendimientoText(String kmCargaAnterior, String kmCargaActual, int index) {
+  final kmAnterior = int.tryParse(kmCargaAnterior) ?? 0;
+  final kmActual = int.tryParse(kmCargaActual) ?? 0;
+  final diferenciaKm = kmAnterior - kmActual;
 
-        if (confirmacion == true) {
-          context.read<MyAppState>().eliminarCarga(carga);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Carga eliminada')),
+  return Container(
+    padding: EdgeInsets.all(10),
+    decoration: BoxDecoration(
+      color: Colors.grey[50],
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: 'Kilometros recorridos: ',
+            style: TextStyle(color: Colors.grey[800]),
+          ),
+          TextSpan(
+            text: '$diferenciaKm km',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: diferenciaKm > 0 ? Colors.green[700] : Colors.red[700],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+  Widget _buildDeleteButton(BuildContext context, carga) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: IconButton(
+        icon: const Icon(Icons.delete, color: Colors.black),
+        onPressed: () async {
+          final confirmacion = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Confirmar eliminación'),
+              content: const Text('¿Desea eliminar esta carga de combustible?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancelar'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+                ),
+              ],
+            ),
           );
-        }
-      },
+
+          if (confirmacion == true) {
+            context.read<MyAppState>().eliminarCarga(carga);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Carga eliminada correctamente'),
+                backgroundColor: Colors.black,
+              ),
+            );
+          }
+        },
+      ),
     );
   }
 }
