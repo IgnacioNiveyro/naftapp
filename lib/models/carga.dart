@@ -1,9 +1,10 @@
 class Carga {
-  final int? id; // ID puede ser null cuando aún no se guarda en DB
+  final int? id;
   final DateTime fecha;
-  final String kmS;
-  final String monto;
+  final int kmS;
+  final int monto;
   final int precio;
+  final Carga? cargaSiguiente; // No se guarda en DB, solo para lógica en memoria
 
   Carga({
     this.id,
@@ -11,9 +12,17 @@ class Carga {
     required this.kmS,
     required this.monto,
     required this.precio,
+    this.cargaSiguiente,
   });
 
-  // Para guardar en DB
+  /// Calcula el rendimiento con respecto a la carga siguiente, si está disponible
+  int? get rendimiento {
+    if (cargaSiguiente != null) {
+      return cargaSiguiente!.kmS - kmS;
+    }
+    return null; // o 0, según lo que prefieras
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -24,11 +33,28 @@ class Carga {
     };
   }
 
-  // Para leer desde DB
   factory Carga.fromMap(Map<String, dynamic> map) {
+    // Parsear fecha - soporta tanto formato ISO como dd/mm/yyyy
+    DateTime parsedDate;
+    try {
+      // Primero intentamos formato ISO
+      parsedDate = DateTime.parse(map['fecha']);
+    } catch (e) {
+      // Si falla, intentamos formato dd/mm/yyyy
+      final parts = map['fecha'].split('/');
+      if (parts.length == 3) {
+        final day = int.parse(parts[0]);
+        final month = int.parse(parts[1]);
+        final year = int.parse(parts[2]);
+        parsedDate = DateTime(year, month, day);
+      } else {
+        throw FormatException('Invalid date format ${map["fecha"]}');
+      }
+    }
+
     return Carga(
       id: map['id'],
-      fecha: DateTime.parse(map['fecha']),
+      fecha: parsedDate,
       kmS: map['kmS'],
       monto: map['monto'],
       precio: map['precio'],

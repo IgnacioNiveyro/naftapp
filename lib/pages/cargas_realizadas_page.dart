@@ -8,19 +8,25 @@ class CargasRealizadasPage extends StatelessWidget {
   Widget build(BuildContext context) {
     var cargas = context.watch<MyAppState>().cargas;
     final dateFormat = DateFormat('dd/MM/yyyy');
+    final theme = Theme.of(context);
 
     if (cargas.isEmpty) {
-      return Center(child: Text('No hay cargas realizadas.'));
+      return Center(
+        child: Text(
+          'No hay cargas realizadas.',
+          style: theme.textTheme.bodyLarge,
+        ),
+      );
     }
 
     List<Widget> items = [];
     for (int i = 0; i < cargas.length; i++) {
       final carga = cargas[i];
-      final litros = double.parse(carga.monto) / carga.precio;
+      final litros = carga.monto / carga.precio;
 
       items.add(
         Card(
-          color: Colors.grey[300],
+          color: theme.colorScheme.surfaceVariant,
           margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -32,29 +38,27 @@ class CargasRealizadasPage extends StatelessWidget {
                   children: [
                     Text(
                       'Carga ${dateFormat.format(carga.fecha)}',
-                      style: TextStyle(
+                      style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: Colors.black,
                       ),
                     ),
                     _buildDeleteButton(context, carga),
                   ],
                 ),
-                
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   'KM: ${carga.kmS} - Monto: \$${carga.monto}',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 Text(
                   'Precio: \$${carga.precio}/L - Litros: ${litros.toStringAsFixed(2)}L',
+                  style: theme.textTheme.bodyMedium,
                 ),
-                
-                // Mostrar rendimiento SOLO si no es la carga más reciente (i > 0)
                 if (i > 0) ...[
-                  SizedBox(height: 12),
-                  _buildRendimientoText(cargas[i-1].kmS, carga.kmS, i),
+                  const SizedBox(height: 12),
+                  _buildRendimientoText(context, cargas[i - 1].kmS, carga.kmS),
                 ],
               ],
             ),
@@ -63,47 +67,54 @@ class CargasRealizadasPage extends StatelessWidget {
       );
     }
 
-    return ListView(
-      children: items,
+    return ListView(children: items);
+  }
+
+  Widget _buildRendimientoText(
+    BuildContext context,
+    int kmCargaAnterior,
+    int kmCargaActual,
+  ) {
+    final kmAnterior = kmCargaAnterior;
+    final kmActual = kmCargaActual;
+    final diferenciaKm = kmAnterior - kmActual;
+    final theme = Theme.of(context);
+    final isPositivo = diferenciaKm > 0;
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: 'Kilometros recorridos: ',
+              style: theme.textTheme.bodyMedium,
+            ),
+            TextSpan(
+              text: '$diferenciaKm km',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isPositivo
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.error,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-Widget _buildRendimientoText(String kmCargaAnterior, String kmCargaActual, int index) {
-  final kmAnterior = int.tryParse(kmCargaAnterior) ?? 0;
-  final kmActual = int.tryParse(kmCargaActual) ?? 0;
-  final diferenciaKm = kmAnterior - kmActual;
-
-  return Container(
-    padding: EdgeInsets.all(10),
-    decoration: BoxDecoration(
-      color: Colors.grey[50],
-      borderRadius: BorderRadius.circular(6),
-    ),
-    child: Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(
-            text: 'Kilometros recorridos: ',
-            style: TextStyle(color: Colors.grey[800]),
-          ),
-          TextSpan(
-            text: '$diferenciaKm km',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: diferenciaKm > 0 ? Colors.green[700] : Colors.red[700],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
   Widget _buildDeleteButton(BuildContext context, carga) {
+    final theme = Theme.of(context);
     return Align(
       alignment: Alignment.centerRight,
       child: IconButton(
-        icon: const Icon(Icons.delete, color: Colors.black),
+        icon: Icon(Icons.delete, color: theme.colorScheme.primary),
         onPressed: () async {
           final confirmacion = await showDialog<bool>(
             context: context,
@@ -117,7 +128,10 @@ Widget _buildRendimientoText(String kmCargaAnterior, String kmCargaActual, int i
                 ),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+                  child: Text(
+                    'Eliminar',
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
                 ),
               ],
             ),
@@ -126,9 +140,9 @@ Widget _buildRendimientoText(String kmCargaAnterior, String kmCargaActual, int i
           if (confirmacion == true) {
             context.read<MyAppState>().eliminarCarga(carga);
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Carga eliminada correctamente'),
-                backgroundColor: Colors.black,
+              SnackBar(
+                content: const Text('Carga eliminada correctamente'),
+                backgroundColor: theme.colorScheme.inverseSurface,
               ),
             );
           }
