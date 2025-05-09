@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 class Carga {
   final int? id;
   final DateTime fecha;
@@ -23,6 +25,18 @@ class Carga {
     return null; // o 0, según lo que prefieras
   }
 
+  // Getter para obtener la fecha formateada
+  String get fechaFormateada {
+    final DateFormat formatter = DateFormat('dd/MM/yyyy HH:mm');
+    return formatter.format(fecha);
+  }
+
+  // Getter para obtener solo la fecha sin hora
+  String get soloFecha {
+    final DateFormat formatter = DateFormat('dd/MM/yyyy');
+    return formatter.format(fecha);
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -34,21 +48,29 @@ class Carga {
   }
 
   factory Carga.fromMap(Map<String, dynamic> map) {
-    // Parsear fecha - soporta tanto formato ISO como dd/mm/yyyy
     DateTime parsedDate;
+    
     try {
-      // Primero intentamos formato ISO
+      // Intentamos formato ISO8601 (que incluye fecha y hora)
       parsedDate = DateTime.parse(map['fecha']);
     } catch (e) {
-      // Si falla, intentamos formato dd/mm/yyyy
-      final parts = map['fecha'].split('/');
-      if (parts.length == 3) {
-        final day = int.parse(parts[0]);
-        final month = int.parse(parts[1]);
-        final year = int.parse(parts[2]);
-        parsedDate = DateTime(year, month, day);
-      } else {
-        throw FormatException('Invalid date format ${map["fecha"]}');
+      // Para manejar casos donde la fecha está en formato dd/MM/yyyy
+      try {
+        final parts = map['fecha'].split('/');
+        if (parts.length == 3) {
+          final day = int.parse(parts[0]);
+          final month = int.parse(parts[1]);
+          final year = int.parse(parts[2]);
+          // Asignamos la hora actual
+          final now = DateTime.now();
+          parsedDate = DateTime(year, month, day, now.hour, now.minute, now.second);
+        } else {
+          throw FormatException('Invalid date format ${map["fecha"]}');
+        }
+      } catch (e) {
+        // Si todo falla, usamos la fecha actual
+        print('Error parsing date: ${map["fecha"]}. Using current date.');
+        parsedDate = DateTime.now();
       }
     }
 

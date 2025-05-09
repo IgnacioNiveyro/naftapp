@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 /// Muestra un diálogo de confirmación con los datos ingresados antes de guardarlos
 Future<bool?> showConfirmationDialog({
@@ -12,6 +13,10 @@ Future<bool?> showConfirmationDialog({
   final theme = Theme.of(context);
   final colorScheme = theme.colorScheme;
   
+  // Formatter para mostrar fecha y hora
+  final DateFormat formatter = DateFormat('dd/MM/yyyy HH:mm');
+  final String fechaFormateada = formatter.format(fecha);
+  
   return showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
@@ -20,7 +25,7 @@ Future<bool?> showConfirmationDialog({
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Fecha: ${fecha.toLocal().toString().split(' ')[0]}'),
+          Text('Fecha: $fechaFormateada'),
           Text('KM: $kmSValue'),
           Text('Monto: \$$montoValue'),
           Text('Precio por litro: \$$precioValue'),

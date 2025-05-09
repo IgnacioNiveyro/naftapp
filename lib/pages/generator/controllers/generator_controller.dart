@@ -3,6 +3,7 @@ import 'package:naftapp/pages/generator/widgets/dialogo_confirmacion.dart';
 import 'package:naftapp/models/carga.dart';
 import 'package:provider/provider.dart';
 import 'package:naftapp/providers/my_app_state.dart';
+import 'package:intl/intl.dart';
 
 /// Controlador para la página de generación de cargas de combustible
 /// Maneja la lógica de negocio y el estado de la UI
@@ -33,9 +34,10 @@ class GeneratorController {
   GeneratorController({required this.context});
 
   void initialize() {
-    // Inicializar la fecha en el controlador
+    // Inicializar la fecha en el controlador con formato que incluye hora
     final now = DateTime.now();
-    final formattedDate = "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}";
+    final DateFormat formatter = DateFormat('dd/MM/yyyy HH:mm');
+    final formattedDate = formatter.format(now);
     fechaController.text = formattedDate;
     
     // Configurar los focus nodes para que no requieran foco automáticamente
@@ -72,25 +74,45 @@ class GeneratorController {
       fechaActualChecked = value;
       if (value) {
         selectedDate = DateTime.now();
-        final now = DateTime.now();
-        final formattedDate = "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}";
-        fechaController.text = formattedDate;
+        final DateFormat formatter = DateFormat('dd/MM/yyyy HH:mm');
+        fechaController.text = formatter.format(selectedDate);
       }
     }
   }
 
   Future<void> selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
+    // Mostrar selector de fecha
+    final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: selectedDate,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     );
     
-    if (picked != null && picked != selectedDate) {
-      selectedDate = picked;
-      final formattedDate = "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
-      fechaController.text = formattedDate;
+    if (pickedDate != null) {
+      // Mostrar selector de hora
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(selectedDate),
+      );
+      
+      if (pickedTime != null) {
+        // Combinar fecha y hora seleccionadas
+        selectedDate = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
+        );
+        
+        // Actualizar el texto del controlador
+        final DateFormat formatter = DateFormat('dd/MM/yyyy HH:mm');
+        fechaController.text = formatter.format(selectedDate);
+        
+        // IMPORTANTE: Marcar como fecha personalizada cuando se selecciona una fecha
+        fechaActualChecked = false;
+      }
     }
   }
 
@@ -113,7 +135,7 @@ class GeneratorController {
     
     // Crear nueva carga temporal para simular la inserción
     final nuevaCarga = Carga(
-      fecha: fechaActualChecked ? DateTime.now() : selectedDate,
+      fecha: selectedDate, // Usar la fecha seleccionada independientemente
       kmS: nuevoKm,
       monto: montoValue.toInt(),
       precio: precioValue.toInt(),
@@ -153,13 +175,11 @@ class GeneratorController {
     kmSValue = 0.0;
     montoValue = 0.0;
     
-    // Restablecer la fecha actual si está habilitada
-    if (fechaActualChecked) {
-      selectedDate = DateTime.now();
-      final now = DateTime.now();
-      final formattedDate = "${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}";
-      fechaController.text = formattedDate;
-    }
+    // Restablecer la fecha actual
+    selectedDate = DateTime.now();
+    final DateFormat formatter = DateFormat('dd/MM/yyyy HH:mm');
+    fechaController.text = formatter.format(selectedDate);
+    fechaActualChecked = true; // Restablecer a fecha actual después de guardar
     
     // Asegurarse de que ningún campo reciba el foco después de limpiar
     precioFocusNode.canRequestFocus = false;
@@ -198,8 +218,8 @@ class GeneratorController {
       // Calcular litros
       final litros = montoValue / precioValue;
       
-      // La fecha a utilizar
-      final fecha = fechaActualChecked ? DateTime.now() : selectedDate;
+      // CORREGIDO: Usar siempre selectedDate en lugar de condicional
+      final fecha = selectedDate;
       
       // Mostrar diálogo de confirmación
       final confirmed = await showConfirmationDialog(
@@ -229,7 +249,7 @@ class GeneratorController {
           return;
         }
         
-        // Crear el objeto carga
+        // Crear el objeto carga - CORREGIDO: Usar selectedDate
         final nuevaCarga = Carga(
           fecha: fecha,
           kmS: kmSInt,
